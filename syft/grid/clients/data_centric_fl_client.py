@@ -2,10 +2,13 @@ import json
 import requests
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
-from typing import Union
+from typing import Union, Dict
 from urllib.parse import urlparse
+import pickle
+import torch
 
 # Syft imports
+import syft as sy
 from syft.serde import serialize
 from syft.version import __version__
 from syft.execution.plan import Plan
@@ -286,16 +289,75 @@ class DataCentricFLClient(WebsocketClientWorker):
         return f"<Federated Worker id:{self.id}>"
 
     @staticmethod
-    def simplify(_worker: AbstractWorker, worker: "VirtualWorker") -> tuple:
-        return BaseWorker.simplify(_worker, worker)
+    def simplify(worker: AbstractWorker, data_centric_fl_client: "DataCentricFLClient") -> tuple:
+
+        # Simplify the attributes for DataCentricFLClient
+        address = pickle.dumps(data_centric_fl_client.address)
+        id = pickle.dumps(data_centric_fl_client.id)
+        is_client_worker = pickle.dumps(data_centric_fl_client.is_client_worker)
+        log_msgs = pickle.dumps(data_centric_fl_client.log_msgs)
+        verbose = pickle.dumps(data_centric_fl_client.verbose)
+        encoding = pickle.dumps(data_centric_fl_client.encoding)
+        timeout = pickle.dumps(data_centric_fl_client.timeout)
+
+        return (address, id, is_client_worker, log_msgs, verbose, encoding, timeout)
 
     @staticmethod
-    def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union["VirtualWorker", int, str]:
-        detailed = BaseWorker.detail(worker, worker_tuple)
+    def detail(
+        worker: AbstractWorker, client_tuple: tuple
+    ) -> Union["DataCentricFLClient", int, str]:
 
-        if isinstance(detailed, int):
-            result = VirtualWorker(id=detailed, hook=worker.hook)
-        else:
-            result = detailed
+        address, id, is_client_worker, log_msgs, verbose, encoding, timeout = client_tuple
 
-        return result
+        # detail client attributes
+        address = pickle.loads(address)
+        id = pickle.loads(id)
+        is_client_worker = pickle.loads(is_client_worker)
+        log_msgs = pickle.loads(log_msgs)
+        verbose = pickle.loads(verbose)
+        encoding = pickle.loads(encoding)
+        timeout = pickle.loads(timeout)
+
+        # create torch hook
+        hook = sy.TorchHook(torch)
+        me = hook.local_worker
+
+        # if worker with same id exist return that worker 2 worker with same id raises error
+        if id in me._known_workers.keys():
+            return me._known_workers[id]
+
+        Client = DataCentricFLClient(
+            hook, address, id, is_client_worker, log_msgs, verbose, encoding, timeout
+        )
+
+        return Client
+
+    @staticmethod
+    def get_msgpack_code() -> Dict[str, int]:
+        """This is the implementation of the `get_msgpack_code()`
+        method required by PySyft's SyftSerializable class.
+        It provides a code for msgpack if the type is not present in proto.json.
+        The returned object should be similar to:
+        {
+            "code": int value,
+            "forced_code": int value
+        }
+        Both keys are optional, the common and right way would be to add only the "code" key.
+        Returns:
+            dict: A dict with the "code" and/or "forced_code" keys.
+        """
+
+        # If a msgpack code is not already generated, then generate one
+        # the code is hash of class name
+        if not hasattr(DataCentricFLClient, "proto_id"):
+            DataCentricFLClient.proto_id = sy.serde.msgpack.serde.msgpack_code_generator(
+                DataCentricFLClient.__qualname__
+            )
+
+        code_dict = dict()
+        code_dict["code"] = DataCentricFLClient.proto_id
+        code_dict["forced_code"] = sy.serde.msgpack.serde.msgpack_code_generator(
+            DataCentricFLClient.__qualname__ + "forced"
+        )
+
+        return code_dict
