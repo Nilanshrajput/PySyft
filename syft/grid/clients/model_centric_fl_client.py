@@ -157,9 +157,7 @@ class ModelCentricFLClient:
         id = json.loads(id)
         secure = json.loads(secure)
 
-        Client = ModelCentricFLClient(
-            address, id, secure
-        )
+        Client = ModelCentricFLClient(address, id, secure)
 
         return Client
 
