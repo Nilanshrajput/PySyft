@@ -1,5 +1,5 @@
 import json
-from typing import Dict
+from typing import Union, Dict
 
 import binascii
 import websocket
@@ -157,7 +157,9 @@ class ModelCentricFLClient:
         id = json.loads(id)
         secure = json.loads(secure)
 
-        Client = ModelCentricFLClient(address, id, secure)
+        Client = ModelCentricFLClient(
+            address, id, secure
+        )
 
         return Client
 
