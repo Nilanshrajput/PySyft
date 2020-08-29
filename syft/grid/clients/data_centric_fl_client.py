@@ -315,12 +315,14 @@ class DataCentricFLClient(WebsocketClientWorker):
         timeout = json.loads(timeout)
 
         hook = sy.local_worker.hook
-        me = hook.local_worker
+        me = sy.local_worker
+        
 
         # if worker with same id exist return that worker, 2 worker with same id raises error
-        client = me.local_worker.get_worker(id)
-        if isinstance(client, sy.grid.clients.data_centric_fl_client.DataCentricFLClient):
-            return client
+        # if worker with same id exist return that worker 2 worker with same id raises error
+        if id in me._known_workers.keys():
+            return me._known_workers[id]
+
 
         client = DataCentricFLClient(
             hook, address, id, is_client_worker, log_msgs, verbose, encoding, timeout
