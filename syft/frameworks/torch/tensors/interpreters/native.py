@@ -907,8 +907,8 @@ class TorchTensor(AbstractTensor):
                 default is False.
         """
         if protocol == "falcon":
-            shared_tensor = syft.ReplicatedSharingTensor(owner=self.owner).share_secret(
-                self, owners
+            shared_tensor = syft.ReplicatedSharingTensor(
+                self, owners, ring_size=field, owner=self.owner
             )
             return shared_tensor
         if self.has_child():
@@ -945,7 +945,7 @@ class TorchTensor(AbstractTensor):
             shared_tensor = syft.AutogradTensor().on(shared_tensor, wrap=False)
 
         if not no_wrap:
-            shared_tensor = shared_tensor.wrap()
+            shared_tensor = shared_tensor.wrap(type=self.dtype)
 
         return shared_tensor
 
