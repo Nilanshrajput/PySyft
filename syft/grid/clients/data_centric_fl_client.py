@@ -13,8 +13,6 @@ from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.abstract import AbstractWorker
-from syft.workers.base import BaseWorker
-from syft.workers.virtual import VirtualWorker
 
 
 class DataCentricFLClient(WebsocketClientWorker):
