@@ -316,13 +316,11 @@ class DataCentricFLClient(WebsocketClientWorker):
 
         hook = sy.local_worker.hook
         me = sy.local_worker
-        
 
         # if worker with same id exist return that worker, 2 worker with same id raises error
         # if worker with same id exist return that worker 2 worker with same id raises error
         if id in me._known_workers.keys():
             return me._known_workers[id]
-
 
         client = DataCentricFLClient(
             hook, address, id, is_client_worker, log_msgs, verbose, encoding, timeout
